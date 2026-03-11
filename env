@@ -1,0 +1,36 @@
+# -----------------------------------------------------
+# Paramètres du script
+# -----------------------------------------------------
+
+# Édition de Minecraft
+# Exemples :
+# 'java' = Minecraft Java Édition
+# 'bedrock' = Minecraft Bedrock Édition
+MC_EDITION='java'
+
+# Ports à analyser
+# Exemples :
+# [1000, 2000, 3000] = Analyser les ports 1000, 2000 et 3000
+# 'default' = Port par défaut de Minecraft
+MC_PORTS='default'
+
+# Filtrer par pays
+# Exemples :
+# ['FR', 'US', 'ES'] = France, États-Unis et Espagne
+# ALL = Tout les pays
+COUNTRIES='ALL'
+
+# Filtrer les serveurs en fonction du nombre de joueurs en ligne
+# 0 = Les serveurs avec un minimum de 0 joueurs en ligne au moment du scan serons envoyés sur Discord
+MIN_ONLINE=0
+
+# Filtrer les serveurs premium des serveurs cracks
+# 'ALL' = Premium & cracks
+# 'premium' = Uniquement les serveurs premium
+# 'crack' = Uniquement les serveurs cracks
+AUTH_TYPE='ALL'
+
+# Renseigner l'URL du webhook Discord
+# Tutoriel :
+# https://support.discord.com/hc/fr/articles/228383668-Introduction-aux-Webhooks
+DISCORD_WEBHOOK='WEBHOOK_URL'
