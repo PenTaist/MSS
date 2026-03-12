@@ -55,7 +55,6 @@ else:
 NETWORK=ipaddress.ip_network('0.0.0.0/0')
 MAX_CONNECTIONS=1000
 CHECKPOINT_FILE='data/checkpoint.txt'
-DISCORD_WEBHOOK=os.getenv('DISCORD_WEBHOOK')
 
 # -----------------------------------------------------
 # Définition des fonctions
@@ -64,10 +63,10 @@ DISCORD_WEBHOOK=os.getenv('DISCORD_WEBHOOK')
 # Test du serveur
 def getServer(ip, port):
     try:
-        server = JavaServer(ip, port, timeout=10) if MC_EDITION != 'bedrock' else BedrockServer(ip, port, timeout=10)
+        server = JavaServer(ip, port, timeout=5) if MC_EDITION != 'bedrock' else BedrockServer(ip, port, timeout=5)
         return server.status()
-    except Exception as e:
-        return e
+    except:
+        return None
 
 # Récupération du "Message Of The Day (MOTD)" du serveur
 def getMotd(server, output_folder='data', image='motd.png'):
@@ -105,7 +104,8 @@ def getMotd(server, output_folder='data', image='motd.png'):
         )
 
         return os.path.join(output_folder, image)
-    except:
+    except Exception as e:
+        print(f'\n(getMotd) ERROR => {e}')
         return
 
 # Vérification du type d'authentification du serveur ( premium ou crack )
@@ -181,7 +181,7 @@ async def sendDiscord(ip, port, country, server, auth_label, image_path):
         return response.status_code
 
     except Exception as e:
-        print(f"Erreur Discord: {e}")
+        print(f"\n(sendDiscord) ERROR => {e}")
         return
 
 # Fonction pour récupérer les serveurs dans le fichier data/servers.json
@@ -219,6 +219,7 @@ def saveServer(ip, port, country, server, auth_label):
     with open(path, 'w', encoding='utf-8') as f:
         json.dump(all_servers, f, indent=4, ensure_ascii=False)
 
+# Récupérer la dernière IP scannée
 def getCheckpoint():
     if os.path.exists(CHECKPOINT_FILE):
         with open(CHECKPOINT_FILE, "r") as f:
@@ -228,6 +229,7 @@ def getCheckpoint():
                 return parts[0], int(parts[1])
     return None, None
 
+# Sauvegarder l'avancement du scan
 def saveCheckpoint(ip, port):
     with open(CHECKPOINT_FILE, "w") as f:
         f.write(f"{ip}:{port}")
@@ -236,12 +238,16 @@ def saveCheckpoint(ip, port):
 async def preScan(ip, port):
     try:
         conn = asyncio.open_connection(ip, port)
-        reader, writer = await asyncio.wait_for(conn, timeout=1.0)
+        reader, writer = await asyncio.wait_for(conn, timeout=1.5)
+        
         writer.close()
-
-        return await writer.wait_closed()
+        try:
+            await writer.wait_closed()
+        except:
+            pass
+        return True
     except:
-        return
+        return False
 
 # Fonction pour scanner un serveur
 async def checkPort(ip, port, semaphore, known_ips):
@@ -269,7 +275,8 @@ async def checkPort(ip, port, semaphore, known_ips):
                         saveServer(ip=ip, port=port, country=country, server=server, auth_label=auth_label)
                         await sendDiscord(ip=ip, port=port, country=country, server=server, auth_label=auth_label, image_path=img_path)
                         known_ips.add(str(ip))
-        except Exception:
+        except Exception as e:
+            print(f'(checkPort) ERROR => {e}')
             pass
 
 # Boucle de lancement principale
