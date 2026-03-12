@@ -7,6 +7,7 @@ MSS est un scanner réseau asynchrone ultra-rapide conçu pour découvrir des se
 - Vérification d'Authentification : Détermine si le serveur est Premium ou Cracké ( Open ).
 - Génération de MOTD : Capture le "Message of the Day" HTML et le convertit en image .png.
 - Système de Checkpoint : Sauvegarde la progression dans data/checkpoint.txt pour reprendre le scan automatiquement.
+
 ![discord_example.png](src/images/discord_example.png "Exemple de message")
 
 ## 🛠️ Prérequis
