@@ -146,7 +146,7 @@ async def sendDiscord(ip, port, country, server, auth_label, image_path):
     try:
         now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
-        country_text = f':flag_{country[0].lower()}: {country[1]}' if country[0] == 'un' and country[1] == 'Unknown' else ':man_shrugging: Inconnu'
+        country_text = f':flag_{country[0].lower()}: {country[1]}' if country[0] != 'un' and country[1] != 'Unknown' else ':man_shrugging: Inconnu'
 
         embed = {
             "title": "🥳 Nouveau serveur trouvé !",
