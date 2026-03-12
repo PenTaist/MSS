@@ -7,6 +7,8 @@ MSS est un scanner réseau asynchrone ultra-rapide conçu pour découvrir des se
 - Vérification d'Authentification : Détermine si le serveur est Premium ou Cracké ( Open ).
 - Génération de MOTD : Capture le "Message of the Day" HTML et le convertit en image .png.
 - Système de Checkpoint : Sauvegarde la progression dans data/checkpoint.txt pour reprendre le scan automatiquement.
+![discord_example.png](src/images/discord_example.png "Exemple de message")
+
 ## 🛠️ Prérequis
 Avant de lancer le script, assurez-vous d'avoir :
 - Python 3.8+ installé.
@@ -50,3 +52,6 @@ python3 main.py
 - mss.log : Journal d'erreurs et suivi du scan.
 ## ⚠️ Avertissement
 Ce projet est destiné à un usage éducatif. Le scan massif d'IP peut être restreint par votre fournisseur d'accès. Respectez les lois locales en vigueur.
+# Installation de chromium
+Vous allez avoir besoin d'un navigateur ( Google Chome ou Microsoft Edge ) pour sauvegarder le MOTD du serveur.
+Voici un lien vers la librairie `html2image` : https://github.com/vgalin/html2image

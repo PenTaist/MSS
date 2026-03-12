@@ -51,13 +51,11 @@ if MC_PORTS == 'default':
 else:
     MC_PORTS = [int(p.strip()) for p in MC_PORTS.split(',')]
 
-# Logs
-LOG_FILE='mss.log'
-
 # Scan des ip d'internet
 NETWORK=ipaddress.ip_network('0.0.0.0/0')
-MAX_CONNECTIONS=500
+MAX_CONNECTIONS=1000
 CHECKPOINT_FILE='data/checkpoint.txt'
+DISCORD_WEBHOOK=os.getenv('DISCORD_WEBHOOK')
 
 # -----------------------------------------------------
 # Définition des fonctions
@@ -68,8 +66,8 @@ def getServer(ip, port):
     try:
         server = JavaServer(ip, port, timeout=2) if MC_EDITION != 'bedrock' else BedrockServer(ip, port, timeout=2)
         return server.status()
-    except:
-        return
+    except Exception as e:
+        return e
 
 # Récupération du "Message Of The Day (MOTD)" du serveur
 def getMotd(server, output_folder='data', image='motd.png'):
@@ -86,13 +84,19 @@ def getMotd(server, output_folder='data', image='motd.png'):
             }
         """
 
-        hti = Html2Image(custom_flags=[
-            '--no-sandbox', 
-            '--disable-gpu', 
-            '--log-level=3', 
-            '--disable-software-rasterizer',
-            '--disable-dev-shm-usage'
-        ], output_path=output_folder)
+        hti = Html2Image(
+            custom_flags=[
+                '--no-sandbox', 
+                '--disable-gpu', 
+                '--log-level=3', 
+                '--disable-software-rasterizer',
+                '--disable-dev-shm-usage'
+            ],
+            output_path=output_folder,
+            browser='chromium',
+            browser_executable='/usr/bin/chromium'
+        )
+
         hti.screenshot(
             html_str=html_motd,
             save_as=image,
@@ -178,34 +182,30 @@ async def sendDiscord(ip, port, country, server, auth_label, image_path):
 
     except Exception as e:
         print(f"Erreur Discord: {e}")
-        return None
+        return
 
+# Fonction pour récupérer les serveurs dans le fichier data/servers.json
 def loadServers(filepath):
     if not os.path.exists(filepath) or os.stat(filepath).st_size == 0:
         return set()
     try:
         with open(filepath, 'r', encoding='utf-8') as f:
             data = json.load(f)
-            return {s['ip'] for s in data} if isinstance(data, list) else set(data.keys())
-    except json.JSONDecodeError:
-        print("⚠️ Fichier JSON corrompu, réinitialisation de la liste de saut.")
+            return {s['ip'] for s in data} if isinstance(data, list) else set()
+    except:
         return set()
 
 # Fonction pour sauvegarder les serveurs déjà analysés
 def saveServer(ip, port, country, server, auth_label):
     path = 'data/servers.json'
     os.makedirs('data', exist_ok=True)
-
     all_servers = []
 
     if os.path.exists(path):
         try:
             with open(path, 'r', encoding='utf-8') as f:
                 all_servers = json.load(f)
-                if not isinstance(all_servers, list):
-                    all_servers = []
-        except:
-            all_servers = []
+        except: pass
 
     new_entry = {
         "ip": ip,
@@ -215,7 +215,6 @@ def saveServer(ip, port, country, server, auth_label):
         "online_players": f"{server.players.online}/{server.players.max}",
         "auth": auth_label
     }
-
     all_servers.append(new_entry)
 
     with open(path, 'w', encoding='utf-8') as f:
@@ -234,23 +233,27 @@ def saveCheckpoint(ip, port):
     with open(CHECKPOINT_FILE, "w") as f:
         f.write(f"{ip}:{port}")
 
-# Fonction pour scanner un serveur
-async def checkPort(ip, port, semaphore, known_ips):
-    ip_obj = ipaddress.ip_address(str(ip))
+# Fonction de pré-scan TCP
+async def preScan(ip, port):
+    try:
+        conn = asyncio.open_connection(ip, port)
+        reader, writer = await asyncio.wait_for(conn, timeout=1.0)
+        writer.close()
 
-    if (ip_obj.is_private or ip_obj.is_reserved or ip_obj.is_loopback) or (not ip_obj.is_global or ip_obj.is_multicast):
+        return await writer.wait_closed()
+    except:
         return
 
+# Fonction pour scanner un serveur
+async def checkPort(ip, port, semaphore, known_ips):
     async with semaphore:
         try:
-            server = await asyncio.wait_for(
-                asyncio.to_thread(getServer, ip, port), 
-                timeout=3.0
-            )
+            if not await preScan(ip, port):
+                return
+
+            server = await asyncio.to_thread(getServer, ip, port)
             
             if server and server.players.online >= MIN_ONLINE:
-                print(f"\n✅ Serveur trouvé : {ip}:{port}")
-
                 country = getCountry(ip) or ["un", "Unknown"]
 
                 if COUNTRIES != 'ALL' and country[0].upper() not in COUNTRIES:
@@ -260,16 +263,15 @@ async def checkPort(ip, port, semaphore, known_ips):
                 auth_label = "Premium" if is_premium else "Crack/Open"
                 
                 if AUTH_TYPE == 'ALL' or (AUTH_TYPE == 'premium' and is_premium) or (AUTH_TYPE == 'crack' and not is_premium):
-                    img_path = await asyncio.to_thread(getMotd, server=server)
+                    img_path = await asyncio.to_thread(getMotd, server)
 
                     if img_path:
+                        print(f"\n✅ Serveur trouvé : {ip}:{port}")
                         saveServer(ip=ip, port=port, country=country, server=server, auth_label=auth_label)
                         await sendDiscord(ip=ip, port=port, country=country, server=server, auth_label=auth_label, image_path=img_path)
                         known_ips.add(str(ip))
-        except asyncio.TimeoutError:
+        except Exception:
             pass
-        except Exception as e:
-            print(f'(checkPort) ERROR => {e}')
 
 # Boucle de lancement principale
 async def main():
@@ -277,48 +279,34 @@ async def main():
     found_resume_point = True if last_ip is None else False
 
     if not found_resume_point:
-        print(f"🚀 Reprise du scan à partir de : {last_ip if last_ip else 'DEBUT'}")
+        print(f"🚀 Reprise du scan à partir de : {last_ip}")
     else:
         print(f"🚀 Début du scan sur {NETWORK}...")
 
     known_ips = loadServers('data/servers.json')
-    print(f"💾 {len(known_ips)} adresses déjà connues chargées. Elles seront ignorées.\n")
-
     semaphore = asyncio.Semaphore(MAX_CONNECTIONS)
-    tasks = []
-    start_index = 0
-    END_IP = ipaddress.ip_address("255.255.255.255")
+    tasks = set() 
+    
+    current_ip_int = int(ipaddress.ip_address(last_ip)) if last_ip else 0
+    end_ip_int = int(ipaddress.ip_address("255.255.255.255"))
 
-    if last_ip:
-        start_int = int(ipaddress.ip_address(last_ip))
-        end_int = int(END_IP)
-        current_iterator = (ipaddress.ip_address(i) for i in range(start_int, end_int + 1))
-        found_resume_point = True
-    else:
-        current_iterator = NETWORK
-
-    for ip in current_iterator:
-        if not found_resume_point:
-            if str(ip) == last_ip:
-                found_resume_point = True
-            continue
-
-        if (ip.is_private or not ip.is_global) or (str(ip) in known_ips):
+    for i in range(current_ip_int, end_ip_int + 1):
+        ip = ipaddress.ip_address(i)
+        
+        if not ip.is_global or str(ip) in known_ips:
             continue
 
         for port in MC_PORTS:
-            saveCheckpoint(str(ip), port)
+            task = asyncio.create_task(checkPort(str(ip), port, semaphore, known_ips))
+            tasks.add(task)
+            task.add_done_callback(tasks.discard)
 
-            task = asyncio.create_task(checkPort(str(ip), port=port, semaphore=semaphore, known_ips=known_ips))
-            tasks.append(task)
+            if i % 100 == 0:
+                print(f"\r🧭 Analyse de {ip}:{port} | Tâches actives: {len(tasks)} ", end="", flush=True)
+                saveCheckpoint(str(ip), port)
 
-            print(f"\r🧭 Analyse de {ip}:{port}               ", end="", flush=True)
-
-            if len(tasks) >= 10000:
-                await asyncio.gather(*tasks)
-                tasks = []
-
-            await asyncio.sleep(0.01)
+            if len(tasks) >= MAX_CONNECTIONS * 2:
+                await asyncio.sleep(0.01)
 
     if tasks:
         await asyncio.gather(*tasks)
