@@ -198,7 +198,6 @@ def loadServers(filepath):
 # Fonction pour sauvegarder les serveurs déjà analysés
 def saveServer(ip, port, country, server, auth_label):
     path = 'data/servers.json'
-    os.makedirs('data', exist_ok=True)
     all_servers = []
 
     if os.path.exists(path):
@@ -275,6 +274,8 @@ async def checkPort(ip, port, semaphore, known_ips):
 
 # Boucle de lancement principale
 async def main():
+    os.makedirs('data', exist_ok=True)
+
     last_ip, last_port = getCheckpoint()
     found_resume_point = True if last_ip is None else False
 
