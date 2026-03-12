@@ -64,7 +64,7 @@ DISCORD_WEBHOOK=os.getenv('DISCORD_WEBHOOK')
 # Test du serveur
 def getServer(ip, port):
     try:
-        server = JavaServer(ip, port, timeout=2) if MC_EDITION != 'bedrock' else BedrockServer(ip, port, timeout=2)
+        server = JavaServer(ip, port, timeout=10) if MC_EDITION != 'bedrock' else BedrockServer(ip, port, timeout=10)
         return server.status()
     except Exception as e:
         return e
