@@ -28,6 +28,7 @@ MC_PORTS=[25565,25566]
 COUNTRIES=['fr','us','be']
 MIN_ONLINE=1
 AUTH_TYPE='ALL'
+PING='yes'
 DISCORD_WEBHOOK='votre_url_webhook'
 ```
 ### 3. Exécution par Système d'Exploitation
