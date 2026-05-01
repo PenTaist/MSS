@@ -152,7 +152,7 @@ async def sendDiscord(ip, port, country, server, auth_label, image_path):
         mention = '@everyone' if server.players.online and PING == 'yes' else ""
 
         embed = {
-            "title": f"{mention}🥳 Nouveau serveur trouvé !",
+            "title": f"🥳 Nouveau serveur trouvé !",
             "color": 3447003,
             "timestamp": now,
             "thumbnail": {"url": f'https://eu.mc-api.net/v3/server/favicon/{ip}'},
