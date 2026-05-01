@@ -30,6 +30,11 @@ MIN_ONLINE=0
 # 'crack' = Uniquement les serveurs cracks
 AUTH_TYPE='ALL'
 
+# Envoyer un ping @everyone sur Discord si des joueurs sont en ligne au moment du scan
+# 'yes' = Envoyer un ping
+# 'no' = Ne pas envoyer de ping
+PING='yes'
+
 # Renseigner l'URL du webhook Discord
 # Tutoriel :
 # https://support.discord.com/hc/fr/articles/228383668-Introduction-aux-Webhooks
