@@ -138,7 +138,8 @@ def getCountry(ip):
         with geoip2.database.Reader('src/GeoLite2-Country.mmdb') as reader:
             response = reader.country(ip)
             return [response.country.iso_code.lower(), response.country.name]
-    except:
+    except Exception as e:
+        print(f"⚠️ Erreur à la récupération du pays : {e}")
         return
 
 # Envoie du message final sur Discord
@@ -147,9 +148,10 @@ async def sendDiscord(ip, port, country, server, auth_label, image_path):
         now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
         country_text = f':flag_{country[0].lower()}: {country[1]}' if country[0] != 'un' and country[1] != 'Unknown' else ':man_shrugging: Inconnu'
+        mention = '@everyone ' if server.players.online else ""
 
         embed = {
-            "title": "🥳 Nouveau serveur trouvé !",
+            "title": f"{mention}🥳 Nouveau serveur trouvé !",
             "color": 3447003,
             "timestamp": now,
             "thumbnail": {"url": f'https://eu.mc-api.net/v3/server/favicon/{ip}'},
@@ -163,7 +165,14 @@ async def sendDiscord(ip, port, country, server, auth_label, image_path):
             ]
         }
 
-        payload = {"payload_json": json.dumps({"username": "MSS", "embeds": [embed]})}
+        payload = {
+            "payload_json": json.dumps({
+                "username": "MSS",
+                "allowed_mentions": {"parse": ["everyone"]},
+                "content": mention,
+                "embeds": [embed]
+            })
+        }
 
         with open(image_path, "rb") as f:
             files = {"file": ("motd.png", f, "image/png")}
@@ -179,10 +188,9 @@ async def sendDiscord(ip, port, country, server, auth_label, image_path):
             print(f"⚠️ Discord a répondu avec l'erreur {response.status_code}: {response.text}")
 
         return response.status_code
-
     except Exception as e:
-        print(f"\n(sendDiscord) ERROR => {e}")
-        return
+        print(f"Erreur Discord: {e}")
+        return None
 
 # Fonction pour récupérer les serveurs dans le fichier data/servers.json
 def loadServers(filepath):
