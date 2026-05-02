@@ -45,7 +45,6 @@ COUNTRIES=os.getenv('COUNTRIES')
 MIN_ONLINE=int(os.getenv('MIN_ONLINE'))
 AUTH_TYPE=os.getenv('AUTH_TYPE')
 PING=os.getenv('PING')
-PING_MODE=os.getenv('PING_MODE')
 PING_ID=os.getenv('PING_ID')
 DISCORD_WEBHOOK=os.getenv('DISCORD_WEBHOOK')
 
@@ -117,7 +116,7 @@ def getMotd(server, output_folder='data', image='motd.png'):
             html_str=html_motd,
             save_as=image,
             css_str=css,
-            size=(400, 70)
+            size=(400, 86)
         )
 
         return os.path.join(output_folder, image)
@@ -165,7 +164,7 @@ async def sendDiscord(ip, port, country, server, auth_label, image_path):
         now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
         country_text = f':flag_{country[0].lower()}: {country[1]}' if country[0] != 'un' and country[1] != 'Unknown' else ':man_shrugging: Inconnu'
-        mention = f"<@{PING_ID}>" if server.players.online and PING == 'yes' and (PING_MODE == 'user' or PING_MODE == 'role') and PING_ID else ""
+        mention = f"<@{PING_ID}>" if server.players.online and PING == 'yes' and PING_ID else ""
 
         embed = {
             "title": f"🥳 Nouveau serveur trouvé !",

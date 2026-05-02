@@ -35,13 +35,8 @@ AUTH_TYPE='ALL'
 # 'no' = Ne pas envoyer de ping
 PING='yes'
 
-# Mode du ping à utiliser
-# 'user' = Ping un utilisateur
-# 'role' = Ping un rôle
-PING_MODE='user'
-
-# ID du rôle ou de l'utilisateur à ping si des joueurs sont en ligne
-PING_ID=0000000000000000000
+# ID de l'utilisateur ou du rôle à ping si des joueurs sont en ligne
+PING_ID=1500085937965633656
 
 # Renseigner l'URL du webhook Discord
 # Tutoriel :
