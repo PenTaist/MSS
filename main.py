@@ -165,7 +165,7 @@ async def sendDiscord(ip, port, country, server, auth_label, image_path):
         now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
         country_text = f':flag_{country[0].lower()}: {country[1]}' if country[0] != 'un' and country[1] != 'Unknown' else ':man_shrugging: Inconnu'
-        mention = (f"<@{PING_ID}>" if PING_MODE == 'user' else f"<@&{PING_ID}>") if PING == 'yes' and PING_ID else ''
+        mention = (f"<@{PING_ID}>" if PING_MODE == 'user' else f"<@&{PING_ID}>") if server.players.online and PING == 'yes' and PING_ID else ''
 
         embed = {
             "title": f"🥳 Nouveau serveur trouvé !",
