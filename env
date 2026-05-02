@@ -30,10 +30,18 @@ MIN_ONLINE=0
 # 'crack' = Uniquement les serveurs cracks
 AUTH_TYPE='ALL'
 
-# Envoyer un ping @everyone sur Discord si des joueurs sont en ligne au moment du scan
+# Envoyer un ping sur Discord si des joueurs sont en ligne au moment du scan
 # 'yes' = Envoyer un ping
 # 'no' = Ne pas envoyer de ping
 PING='yes'
+
+# Mode du ping à utiliser
+# 'user' = Ping un utilisateur
+# 'role' = Ping un rôle
+PING_MODE='user'
+
+# ID du rôle ou de l'utilisateur à ping si des joueurs sont en ligne
+PING_ID=0000000000000000000
 
 # Renseigner l'URL du webhook Discord
 # Tutoriel :

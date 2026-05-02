@@ -45,6 +45,8 @@ COUNTRIES=os.getenv('COUNTRIES')
 MIN_ONLINE=int(os.getenv('MIN_ONLINE'))
 AUTH_TYPE=os.getenv('AUTH_TYPE')
 PING=os.getenv('PING')
+PING_MODE=os.getenv('PING_MODE')
+PING_ID=os.getenv('PING_ID')
 DISCORD_WEBHOOK=os.getenv('DISCORD_WEBHOOK')
 
 if MC_PORTS == 'default':
@@ -149,7 +151,7 @@ async def sendDiscord(ip, port, country, server, auth_label, image_path):
         now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
         country_text = f':flag_{country[0].lower()}: {country[1]}' if country[0] != 'un' and country[1] != 'Unknown' else ':man_shrugging: Inconnu'
-        mention = '@everyone' if server.players.online and PING == 'yes' else ""
+        mention = f"<@{PING_ID}>" if server.players.online and PING == 'yes' and (PING_MODE == 'user' or PING_MODE == 'role') and PING_ID else ""
 
         embed = {
             "title": f"🥳 Nouveau serveur trouvé !",
@@ -169,7 +171,7 @@ async def sendDiscord(ip, port, country, server, auth_label, image_path):
         payload = {
             "payload_json": json.dumps({
                 "username": "MSS",
-                "allowed_mentions": {"parse": ["everyone"]},
+                "allowed_mentions": {"parse": ["users", "roles"]},
                 "content": mention,
                 "embeds": [embed]
             })
