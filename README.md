@@ -29,6 +29,7 @@ COUNTRIES=['fr','us','be']
 MIN_ONLINE=1
 AUTH_TYPE='ALL'
 PING='yes'
+PING_MODE='user'
 PING_ID=921374591832707113
 DISCORD_WEBHOOK='votre_url_webhook'
 ```
