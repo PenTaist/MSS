@@ -78,11 +78,25 @@ def getMotd(server, output_folder='data', image='motd.png'):
 
         motd_bg = os.path.join(os.getcwd(), 'src/motd_bg.png')
         css = """
+            @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+
+            * {
+                font-family: "Montserrat", sans-serif;
+            }
+
             body {
                 background: url('"""+motd_bg+"""');
                 background-repeat: repeat;
                 background-size: contain;
                 text-align: center;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+            }
+
+            p {
+                color: #fff;
+                font-weight: 700;
             }
         """
 
@@ -103,7 +117,7 @@ def getMotd(server, output_folder='data', image='motd.png'):
             html_str=html_motd,
             save_as=image,
             css_str=css,
-            size=(400, 50)
+            size=(400, 70)
         )
 
         return os.path.join(output_folder, image)
