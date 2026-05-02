@@ -15,6 +15,8 @@ from dotenv import load_dotenv
 from mcstatus import *
 
 # MOTD
+import uuid
+import shutil
 from html2image import Html2Image
 
 # Premium ou crack
@@ -56,7 +58,7 @@ else:
 
 # Scan des ip d'internet
 NETWORK=ipaddress.ip_network('0.0.0.0/0')
-MAX_CONNECTIONS=1000
+MAX_CONNECTIONS=500
 CHECKPOINT_FILE='data/checkpoint.txt'
 
 # -----------------------------------------------------
@@ -72,58 +74,86 @@ def getServer(ip, port):
         return None
 
 # Récupération du "Message Of The Day (MOTD)" du serveur
-def getMotd(server, output_folder='data', image='motd.png'):
-    try:
-        html_motd = server.motd.to_html()
+def getMotd(server, output_folder='data', image=None, max_retries=2):
+        if image is None:
+            image = f'motd_{uuid.uuid4().hex[:8]}.png'
+        
+        output_path = os.path.join(output_folder, image)
 
-        motd_bg = os.path.join(os.getcwd(), 'src/motd_bg.png')
-        css = """
-            @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+        if os.path.exists(output_path):
+            try:
+                os.remove(output_path)
+            except:
+                pass
+        
+        for attempt in range(max_retries + 1):
+            try:
+                html_motd = server.motd.to_html()
 
-            * {
-                font-family: "Montserrat", sans-serif;
-            }
+                motd_bg = os.path.join(os.getcwd(), 'src/motd_bg.png')
+                css = """
+                    @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
 
-            body {
-                background: url('"""+motd_bg+"""');
-                background-repeat: repeat;
-                background-size: contain;
-                text-align: center;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-            }
+                    * {
+                        font-family: "Montserrat", sans-serif;
+                    }
 
-            p {
-                color: #fff;
-                font-weight: 700;
-            }
-        """
+                    body {
+                        background: url('"""+motd_bg+"""');
+                        background-repeat: repeat;
+                        background-size: contain;
+                        text-align: center;
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: center;
+                    }
 
-        hti = Html2Image(
-            custom_flags=[
-                '--no-sandbox', 
-                '--disable-gpu', 
-                '--log-level=3', 
-                '--disable-software-rasterizer',
-                '--disable-dev-shm-usage'
-            ],
-            output_path=output_folder,
-            browser='chromium',
-            browser_executable='/usr/bin/chromium'
-        )
+                    p {
+                        color: #fff;
+                        font-weight: 700;
+                    }
+                """
 
-        hti.screenshot(
-            html_str=html_motd,
-            save_as=image,
-            css_str=css,
-            size=(400, 86)
-        )
+                hti = Html2Image(
+                    custom_flags=[
+                        '--no-sandbox', 
+                        '--disable-gpu', 
+                        '--log-level=3', 
+                        '--disable-software-rasterizer',
+                        '--disable-dev-shm-usage'
+                    ],
+                    output_path=output_folder,
+                    browser='chromium',
+                    browser_executable='/usr/bin/chromium'
+                )
 
-        return os.path.join(output_folder, image)
-    except Exception as e:
-        print(f'\n(getMotd) ERROR => {e}')
-        return
+                hti.screenshot(
+                    html_str=html_motd,
+                    save_as=image,
+                    css_str=css,
+                    size=(400, 86)
+                )
+
+                try:
+                    shutil.rmtree(temp_dir, ignore_errors=True)
+                except:
+                    pass
+
+                if os.path.exists(output_path) and os.path.getsize(output_path) > 0:
+                    return output_path
+                else:
+                    if attempt < max_retries:
+                        sleep(0.3)
+                        continue
+                    else:
+                        print(f'\n(getMotd) Fichier non créé après {max_retries+1} tentatives')
+                        return None
+            except Exception as e:
+                if attempt < max_retries:
+                    sleep(0.3)
+                    continue
+                print(f'\n(getMotd) ERROR => {e}')
+                return None
 
 # Vérification du type d'authentification du serveur ( premium ou crack )
 def checkPremium(ip, port):
@@ -167,12 +197,14 @@ async def sendDiscord(ip, port, country, server, auth_label, image_path):
         country_text = f':flag_{country[0].lower()}: {country[1]}' if country[0] != 'un' and country[1] != 'Unknown' else ':man_shrugging: Inconnu'
         mention = (f"<@{PING_ID}>" if PING_MODE == 'user' else f"<@&{PING_ID}>") if server.players.online and PING == 'yes' and PING_ID else ''
 
+        image_filename = os.path.basename(image_path)
+
         embed = {
             "title": f"🥳 Nouveau serveur trouvé !",
             "color": 3447003,
             "timestamp": now,
             "thumbnail": {"url": f'https://eu.mc-api.net/v3/server/favicon/{ip}'},
-            "image": {"url": "attachment://motd.png"},
+            "image": {"url": f"attachment://{image_filename}"},
             "fields": [
                 {"name": 'Pays', "value": country_text, "inline": True},
                 {"name": 'IP', "value": f'```{ip}:{port}```', "inline": False},
@@ -192,7 +224,7 @@ async def sendDiscord(ip, port, country, server, auth_label, image_path):
         }
 
         with open(image_path, "rb") as f:
-            files = {"file": ("motd.png", f, "image/png")}
+            files = {"file": (image_filename, f, "image/png")}
 
             response = await asyncio.to_thread(
                 requests.post, 
@@ -242,7 +274,7 @@ def saveServer(ip, port, country, server, auth_label):
     all_servers.append(new_entry)
 
     with open(path, 'w', encoding='utf-8') as f:
-        json.dump(all_servers, f, indent=4, ensure_ascii=False)
+        json.dump(all_servers, f, ensure_ascii=False)
 
 # Récupérer la dernière IP scannée
 def getCheckpoint():
@@ -300,6 +332,11 @@ async def checkPort(ip, port, semaphore, known_ips):
                         saveServer(ip=ip, port=port, country=country, server=server, auth_label=auth_label)
                         await sendDiscord(ip=ip, port=port, country=country, server=server, auth_label=auth_label, image_path=img_path)
                         known_ips.add(str(ip))
+
+                        try:
+                            os.remove(img_path)
+                        except:
+                            pass
         except Exception as e:
             print(f'(checkPort) ERROR => {e}')
             pass
